@@ -1,0 +1,66 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id         Int      @id @default(autoincrement())
+  telegramId BigInt   @unique @map("telegram_id")
+  isBot      Boolean  @default(false) @map("is_bot")
+  firstName  String   @map("first_name")
+  lastName   String?  @map("last_name")
+  username   String?
+  languageCode String? @map("language_code")
+  isPremium  Boolean  @default(false) @map("is_premium")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  events Event[]
+
+  @@map("users")
+}
+
+model Chat {
+  id          Int      @id @default(autoincrement())
+  telegramId  BigInt   @unique @map("telegram_id")
+  type        String   // "private" | "group" | "supergroup" | "channel"
+  title       String?
+  username    String?
+  firstName   String?  @map("first_name")
+  lastName    String?  @map("last_name")
+  description String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  events Event[]
+
+  @@map("chats")
+}
+
+model Event {
+  id         Int      @id @default(autoincrement())
+  updateId   BigInt   @map("update_id")
+  type       String   // "message" | "edited_message" | "callback_query" тощо
+  text       String?  // текст повідомлення, якщо є
+
+  /// Повний оригінальний payload від Telegram у JSON нічого не втрачаємо
+  rawPayload Json     @map("raw_payload")
+
+  userId     Int?     @map("user_id")
+  user       User?    @relation(fields: [userId], references: [id])
+
+  chatId     Int?     @map("chat_id")
+  chat       Chat?    @relation(fields: [chatId], references: [id])
+
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([chatId])
+  @@index([type])
+  @@map("events")
+}
